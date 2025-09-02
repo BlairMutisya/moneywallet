@@ -1,7 +1,6 @@
 package com.cashbox.moneywallet.authservice.controller;
 
 import com.cashbox.moneywallet.authservice.dto.response.UserResponse;
-import com.cashbox.moneywallet.authservice.dto.request.UpdateUserRequest;
 import com.cashbox.moneywallet.authservice.entity.User;
 import com.cashbox.moneywallet.authservice.service.UserService;
 import com.cashbox.moneywallet.common.response.BaseApiResponse;
