@@ -1,6 +1,5 @@
 package com.cashbox.moneywallet.entity;
 
-import com.cashbox.moneywallet.enums.AccountType;
 import com.cashbox.moneywallet.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -54,7 +53,8 @@ public class User {
     private Set<Role> roles = new HashSet<>();
 
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "account_type_id", nullable = false)
     private AccountType accountType;
+
 }

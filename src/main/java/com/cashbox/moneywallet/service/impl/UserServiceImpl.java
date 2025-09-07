@@ -2,8 +2,9 @@ package com.cashbox.moneywallet.service.impl;
 
 import com.cashbox.moneywallet.dto.request.UserUpdateRequest;
 import com.cashbox.moneywallet.dto.response.UserResponse;
+import com.cashbox.moneywallet.entity.AccountType;
 import com.cashbox.moneywallet.entity.User;
-import com.cashbox.moneywallet.enums.AccountType;
+import com.cashbox.moneywallet.repository.AccountTypeRepository;
 import com.cashbox.moneywallet.repository.UserRepository;
 import com.cashbox.moneywallet.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,6 +20,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AccountTypeRepository accountTypeRepository;
 
     @Override
     public UserResponse getUserById(Long id) {
@@ -64,13 +66,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void linkAccountType(Long userId, AccountType accountType) {
+    public void linkAccountType(Long userId, Long accountTypeId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        AccountType accountType = accountTypeRepository.findById(accountTypeId)
+                .orElseThrow(() -> new EntityNotFoundException("Account type not found"));
 
         user.setAccountType(accountType);
         userRepository.save(user);
     }
+
 
     private UserResponse mapToResponse(User user) {
         return UserResponse.builder()

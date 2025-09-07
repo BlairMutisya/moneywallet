@@ -2,7 +2,6 @@ package com.cashbox.moneywallet.service;
 
 import com.cashbox.moneywallet.dto.request.UserUpdateRequest;
 import com.cashbox.moneywallet.dto.response.UserResponse;
-import com.cashbox.moneywallet.enums.AccountType;
 
 public interface UserService {
 
@@ -14,5 +13,6 @@ public interface UserService {
 
     UserResponse updateUser(Long id, UserUpdateRequest request);
 
-    void linkAccountType(Long userId, AccountType accountType);
+    void linkAccountType(Long userId, Long accountTypeId);
+
 }

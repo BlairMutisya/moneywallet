@@ -1,9 +1,9 @@
 package com.cashbox.moneywallet.service.impl;
 
 import com.cashbox.moneywallet.common.BaseApiResponse;
-import com.cashbox.moneywallet.enums.AccountType;
+import com.cashbox.moneywallet.entity.AccountType;
 import com.cashbox.moneywallet.enums.Role;
-import com.cashbox.moneywallet.exception.InvalidAccountTypeException;
+import com.cashbox.moneywallet.repository.AccountTypeRepository;
 import com.cashbox.moneywallet.security.JwtService;
 import com.cashbox.moneywallet.service.EmailService;
 import com.cashbox.moneywallet.service.AuthService;
@@ -36,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AccountTypeRepository accountTypeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
@@ -50,14 +51,12 @@ public class AuthServiceImpl implements AuthService {
             throw new UserAlreadyExistsException("Phone number already in use");
         }
 
-        AccountType accountType = request.getAccountType();
-        if (accountType == null) {
-            throw new InvalidAccountTypeException("Account type is required");
-        }
+        AccountType accountType = accountTypeRepository
+                .findById(request.getAccountTypeId())
+                .orElseThrow(() -> new RuntimeException("Invalid account type"));
 
         User user = User.builder()
                 .firstName(request.getFirstName())
-                .middleName(request.getMiddleName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .phone(request.getPhone())
@@ -65,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
                 .enabled(true)
                 .accountType(accountType)
                 .build();
+
 
 
         Set<Role> roles = new HashSet<>();

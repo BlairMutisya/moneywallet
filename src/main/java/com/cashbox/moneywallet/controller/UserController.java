@@ -2,7 +2,6 @@ package com.cashbox.moneywallet.controller;
 
 import com.cashbox.moneywallet.dto.request.UserUpdateRequest;
 import com.cashbox.moneywallet.dto.response.UserResponse;
-import com.cashbox.moneywallet.enums.AccountType;
 import com.cashbox.moneywallet.service.UserService;
 import com.cashbox.moneywallet.common.BaseApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,9 +72,10 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Account type linked successfully")
     public BaseApiResponse<Void> linkAccountType(
             @PathVariable Long id,
-            @RequestParam AccountType accountType
+            @RequestParam Long accountTypeId
     ) {
-        userService.linkAccountType(id, accountType);
+        userService.linkAccountType(id, accountTypeId);  // service fetches entity
         return BaseApiResponse.success(null, "Account type linked successfully");
     }
+
 }
