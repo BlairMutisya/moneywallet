@@ -48,10 +48,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public BaseApiResponse<AuthResponse> register(RegisterRequest request) {
-        // 1. Validate unique email/phone
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("Email already in use");
-        }
+        // 1. Validate unique phone
+//        if (userRepository.existsByEmail(request.getEmail())) {
+//            throw new UserAlreadyExistsException("Email already in use");
+//        }
         if (userRepository.existsByPhone(request.getPhone())) {
             throw new UserAlreadyExistsException("Phone number already in use");
         }
@@ -93,6 +93,11 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         refreshTokenRepository.save(refresh);
 
+
+
+
+   //TODO: Remove the Access Token and
+
         // 8. Publish Kafka event
         UserRegisteredEvent event = UserRegisteredEvent.builder()
                 .userId(user.getId())
@@ -103,6 +108,12 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(user.getLastName())
                 .build();
         userEventProducer.publishUserRegistered(event);
+
+
+
+
+
+
 
         // 9. Prepare response
         AuthResponse response = AuthResponse.builder()
