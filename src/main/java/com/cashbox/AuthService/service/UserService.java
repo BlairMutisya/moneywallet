@@ -15,4 +15,6 @@ public interface UserService {
 
     void linkAccountType(Long userId, Long accountTypeId);
 
+    boolean existsByPhone(String phone);
+
 }

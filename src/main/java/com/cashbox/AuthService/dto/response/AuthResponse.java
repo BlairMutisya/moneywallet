@@ -13,6 +13,8 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 public class AuthResponse {
+    private Long id;
+    private Long userId;
     private String accessToken;
     private String refreshToken;
     private String tokenType = "Bearer";

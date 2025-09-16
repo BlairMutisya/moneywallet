@@ -3,7 +3,6 @@ package com.cashbox.AuthService.controller;
 import com.cashbox.AuthService.entity.AccountType;
 import com.cashbox.AuthService.service.AccountTypeService;
 import com.cashbox.AuthService.common.BaseApiResponse;
-import com.cashbox.AuthService.util.ResponseUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +18,6 @@ public class AccountTypeController {
     @GetMapping
     public BaseApiResponse<List<AccountType>> getAllAccountTypes() {
         List<AccountType> types = accountTypeService.getAllAccountTypes();
-        return ResponseUtils.success(types, "Account types fetched successfully");
+        return BaseApiResponse.success("Account types fetched successfully", types);
     }
 }

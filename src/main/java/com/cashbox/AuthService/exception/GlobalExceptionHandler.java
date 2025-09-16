@@ -1,5 +1,6 @@
 package com.cashbox.AuthService.exception;
 
+import com.cashbox.AuthService.common.BaseApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,4 +33,12 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(500).body(body);
     }
+    @ExceptionHandler(PinException.class)
+    public BaseApiResponse<Object> handlePinException(PinException ex) {
+        return BaseApiResponse.error(
+                ex.getMessage(),
+                ex.getErrorCode().name()
+        );
+    }
+
 }

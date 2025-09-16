@@ -10,7 +10,6 @@ import com.cashbox.AuthService.security.JwtService;
 import com.cashbox.AuthService.service.EmailService;
 import com.cashbox.AuthService.service.AuthService;
 import com.cashbox.AuthService.util.OtpGenerator;
-import com.cashbox.AuthService.util.ResponseUtils;
 import com.cashbox.AuthService.dto.request.*;
 import com.cashbox.AuthService.dto.response.AuthResponse;
 import com.cashbox.AuthService.dto.response.JwtResponse;
@@ -45,13 +44,9 @@ public class AuthServiceImpl implements AuthService {
     private final OtpGenerator otpGenerator;
     private final UserEventProducer userEventProducer;
 
-
     @Override
     public BaseApiResponse<AuthResponse> register(RegisterRequest request) {
         // 1. Validate unique phone
-//        if (userRepository.existsByEmail(request.getEmail())) {
-//            throw new UserAlreadyExistsException("Email already in use");
-//        }
         if (userRepository.existsByPhone(request.getPhone())) {
             throw new UserAlreadyExistsException("Phone number already in use");
         }
@@ -81,22 +76,17 @@ public class AuthServiceImpl implements AuthService {
         // 5. Save user
         userRepository.save(user);
 
-        // 6. Generate JWT tokens
-        String accessToken = jwtService.generateToken(user.getPhone());
-        String refreshToken = jwtService.generateRefreshToken(user.getPhone());
-
-        // 7. Save refresh token
-        RefreshToken refresh = RefreshToken.builder()
-                .token(refreshToken)
-                .user(user)
-                .expiryDate(Instant.now().plusSeconds(jwtService.getRefreshTokenDuration()))
-                .build();
-        refreshTokenRepository.save(refresh);
-
-
-
-
-   //TODO: Remove the Access Token and
+//        // 6. Generate JWT tokens
+//        String accessToken = jwtService.generateToken(user.getPhone());
+//        String refreshToken = jwtService.generateRefreshToken(user.getPhone());
+//
+//        // 7. Save refresh token
+//        RefreshToken refresh = RefreshToken.builder()
+//                .token(refreshToken)
+//                .user(user)
+//                .expiryDate(Instant.now().plusSeconds(jwtService.getRefreshTokenDuration()))
+//                .build();
+//        refreshTokenRepository.save(refresh);
 
         // 8. Publish Kafka event
         UserRegisteredEvent event = UserRegisteredEvent.builder()
@@ -109,26 +99,18 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         userEventProducer.publishUserRegistered(event);
 
-
-
-
-
-
-
         // 9. Prepare response
         AuthResponse response = AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
+//                .accessToken(accessToken)
+//                .refreshToken(refreshToken)
                 .firstName(user.getFirstName())
                 .middleName(user.getMiddleName())
                 .lastName(user.getLastName())
                 .roles(user.getRoles())
                 .build();
 
-        return ResponseUtils.success(response, "Registration successful");
+        return BaseApiResponse.success("Registration successful", response);
     }
-
-
 
     @Override
     public BaseApiResponse<JwtResponse> login(LoginRequest request) {
@@ -161,7 +143,7 @@ public class AuthServiceImpl implements AuthService {
                 .roles(user.getRoles().stream().map(Enum::name).collect(Collectors.toSet()))
                 .build();
 
-        return ResponseUtils.success(jwtResponse, "Login successful");
+        return BaseApiResponse.success("Login successful", jwtResponse);
     }
 
     @Override
@@ -187,14 +169,13 @@ public class AuthServiceImpl implements AuthService {
                 .roles(token.getUser().getRoles().stream().map(Enum::name).collect(Collectors.toSet()))
                 .build();
 
-
-        return ResponseUtils.success(jwtResponse, "Token refreshed");
+        return BaseApiResponse.success("Token refreshed", jwtResponse);
     }
 
     @Override
     public BaseApiResponse<Void> logout(String refreshToken) {
         refreshTokenRepository.deleteByToken(refreshToken);
-        return ResponseUtils.success(null, "Logged out successfully");
+        return BaseApiResponse.success("Logged out successfully");
     }
 
     @Override
@@ -213,9 +194,8 @@ public class AuthServiceImpl implements AuthService {
         emailService.sendOtp(user.getEmail(), otp);
 
         // 5. Return success response
-        return ResponseUtils.success(null, "OTP sent to email");
+        return BaseApiResponse.success("OTP sent to email");
     }
-
 
     @Override
     public BaseApiResponse<Void> resetPassword(ResetPasswordRequest request) {
@@ -223,8 +203,6 @@ public class AuthServiceImpl implements AuthService {
         // TODO: Verify OTP from Redis/DB and get corresponding user
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-//        String otp = otpGenerator.generate6DigitOtp();
 
         // 2. Validate new password
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
@@ -236,8 +214,6 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         // 4. Return success response
-        return ResponseUtils.success(null, "Password reset successful");
+        return BaseApiResponse.success("Password reset successful");
     }
-
-
 }

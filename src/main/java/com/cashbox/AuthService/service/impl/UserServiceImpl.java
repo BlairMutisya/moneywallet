@@ -35,6 +35,10 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return mapToResponse(user);
     }
+    @Override
+    public boolean existsByPhone(String phone) {
+        return userRepository.existsByPhone(phone);
+    }
 
     @Override
     public UserResponse getUserByEmail(String email) {

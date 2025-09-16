@@ -15,4 +15,5 @@ public interface AuthService {
     BaseApiResponse<Void> logout(String refreshToken);
     BaseApiResponse<Void> forgotPassword(ForgotPasswordRequest request);
     BaseApiResponse<Void> resetPassword(ResetPasswordRequest request);
+
 }
