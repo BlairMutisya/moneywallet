@@ -1,0 +1,21 @@
+package com.cashbox.AuthService.dto.response;
+
+import com.cashbox.AuthService.enums.Role;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Set;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class RegisterResponse {
+    private Long userId;
+    private String firstName;
+    private String middleName;
+    private String lastName;
+    private Set<Role> roles;
+}

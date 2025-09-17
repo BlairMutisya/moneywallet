@@ -87,33 +87,35 @@ public class PinServiceImpl implements PinService {
     @Override
     @Transactional
     public boolean verifyPin(String pin) {
-
-        // Get the logged-in user from SecurityContext
         var currentUser = authUtils.getCurrentUser();
         Long userId = currentUser.getId();
+        log.debug("Verifying PIN for user {}", userId);
 
-        // Look up PIN record
         WalletPin walletPin = walletPinRepository.findByUserId(userId)
-                .orElseThrow(() -> new PinException(PinErrorCode.INVALID, "No PIN found for user"));
+                .orElseThrow(() -> {
+                    log.warn("No PIN found for user {}", userId);
+                    return new PinException(PinErrorCode.INVALID, "No PIN found for user");
+                });
 
-        // Check lock state
         if (walletPin.getLockedUntil() != null && walletPin.getLockedUntil().isAfter(LocalDateTime.now())) {
+            log.warn("User {} attempted PIN but is locked until {}", userId, walletPin.getLockedUntil());
             throw new PinException(PinErrorCode.LOCKED, "PIN locked. Try again later");
         }
 
-        // Validate PIN
         if (!passwordEncoder.matches(pin, walletPin.getPinHash())) {
+            log.warn("Invalid PIN attempt for user {}", userId);
             handleFailedAttempt(walletPin);
             return false;
         }
 
-        // Reset failed attempts on success
+        // Success
+        log.debug("PIN verified successfully for user {}", userId);
         walletPin.setFailedAttempts(0);
         walletPin.setLockedUntil(null);
         walletPinRepository.save(walletPin);
-
         return true;
     }
+
 
 
 

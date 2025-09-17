@@ -1,15 +1,18 @@
 package com.cashbox.AuthService.controller;
 
+import com.cashbox.AuthService.dto.response.RegisterResponse;
 import com.cashbox.AuthService.service.AuthService;
 import com.cashbox.AuthService.common.BaseApiResponse;
 import com.cashbox.AuthService.dto.request.*;
 import com.cashbox.AuthService.dto.response.AuthResponse;
 import com.cashbox.AuthService.dto.response.JwtResponse;
+import com.cashbox.AuthService.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,12 +23,13 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user", description = "Creates a new user account with email, phone, and password")
     @ApiResponse(responseCode = "200", description = "User registered successfully",
             content = @Content(schema = @Schema(implementation = AuthResponse.class)))
-    public BaseApiResponse<AuthResponse> register(@RequestBody RegisterRequest request) {
+    public BaseApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 
@@ -64,5 +68,32 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Password reset successful")
     public BaseApiResponse<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
         return authService.resetPassword(request);
+    }
+    @Operation(
+            summary = "Check if phone number exists",
+            description = "Used by mobile app to determine whether to show login or registration page"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Returns true if phone exists, false otherwise"
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Invalid input data"
+    )
+    @PostMapping("/exists/phone")
+    public BaseApiResponse<Boolean> checkPhoneExists(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Phone number to check",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = PhoneCheckRequest.class))
+            )
+            @Valid @RequestBody PhoneCheckRequest request) {
+
+        boolean exists = userService.existsByPhone(request.getPhone());
+        return BaseApiResponse.success(
+                "Phone existence checked successfully",
+                exists
+        );
     }
 }

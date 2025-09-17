@@ -15,12 +15,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/pin")
 @RequiredArgsConstructor
 @Tag(name = "PIN Management", description = "Endpoints for creating, changing and verifying user wallet PINs")
+@Slf4j
 public class PinController {
 
     private final PinService pinService;
@@ -49,14 +51,28 @@ public class PinController {
                     @ApiResponse(responseCode = "200", description = "Verification result",
                             content = @Content(schema = @Schema(implementation = PinVerificationResponse.class)))
             })
+
     @PostMapping("/verify")
     public BaseApiResponse<PinVerificationResponse> verifyPin(
             @Valid @RequestBody PinVerificationRequest request) {
-        boolean isValid = pinService.verifyPin(request.getPin());
-        return BaseApiResponse.success(
+        // ⚠️ Never log the actual PIN
+        log.info("Received PIN verification request");
+
+        boolean isValid;
+        try {
+            isValid = pinService.verifyPin(request.getPin());
+            log.debug("verifyPin returned {}", isValid);
+        } catch (Exception e) {
+            log.error("Error verifying PIN", e);
+            throw e; // or wrap in BaseApiResponse.error(...)
+        }
+
+        BaseApiResponse<PinVerificationResponse> response = BaseApiResponse.success(
                 "PIN verification result",
                 new PinVerificationResponse(isValid)
         );
+        log.info("Returning PIN verification response: {}", response);
+        return response;
     }
 }
 

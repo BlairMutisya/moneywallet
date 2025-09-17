@@ -37,16 +37,6 @@ public class UserController {
         return BaseApiResponse.success("User found", userService.getUserById(id));
     }
 
-    @GetMapping("/phone/{phone}")
-    @Operation(
-            summary = "Get user by phone",
-            description = "Retrieve a user by their phone number"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "User found",
-            content = @Content(schema = @Schema(implementation = BaseApiResponse.class))
-    )
     public BaseApiResponse<UserResponse> getUserByPhone(
             @Parameter(description = "User phone number", required = true)
             @PathVariable String phone) {

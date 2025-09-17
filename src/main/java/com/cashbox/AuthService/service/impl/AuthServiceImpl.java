@@ -1,25 +1,26 @@
 package com.cashbox.AuthService.service.impl;
 
 import com.cashbox.AuthService.common.BaseApiResponse;
-import com.cashbox.AuthService.entity.AccountType;
-import com.cashbox.AuthService.enums.Role;
-import com.cashbox.AuthService.events.UserRegisteredEvent;
-import com.cashbox.AuthService.events.producer.UserEventProducer;
-import com.cashbox.AuthService.repository.AccountTypeRepository;
-import com.cashbox.AuthService.security.JwtService;
-import com.cashbox.AuthService.service.EmailService;
-import com.cashbox.AuthService.service.AuthService;
-import com.cashbox.AuthService.util.OtpGenerator;
 import com.cashbox.AuthService.dto.request.*;
 import com.cashbox.AuthService.dto.response.AuthResponse;
 import com.cashbox.AuthService.dto.response.JwtResponse;
+import com.cashbox.AuthService.dto.response.RegisterResponse;
+import com.cashbox.AuthService.entity.AccountType;
 import com.cashbox.AuthService.entity.RefreshToken;
 import com.cashbox.AuthService.entity.User;
+import com.cashbox.AuthService.enums.Role;
+import com.cashbox.AuthService.events.UserRegisteredEvent;
+import com.cashbox.AuthService.events.producer.UserEventProducer;
 import com.cashbox.AuthService.exception.InvalidTokenException;
 import com.cashbox.AuthService.exception.UserAlreadyExistsException;
 import com.cashbox.AuthService.exception.UserNotFoundException;
+import com.cashbox.AuthService.repository.AccountTypeRepository;
 import com.cashbox.AuthService.repository.RefreshTokenRepository;
 import com.cashbox.AuthService.repository.UserRepository;
+import com.cashbox.AuthService.security.JwtService;
+import com.cashbox.AuthService.service.AuthService;
+import com.cashbox.AuthService.service.EmailService;
+import com.cashbox.AuthService.util.OtpGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -45,18 +46,15 @@ public class AuthServiceImpl implements AuthService {
     private final UserEventProducer userEventProducer;
 
     @Override
-    public BaseApiResponse<AuthResponse> register(RegisterRequest request) {
-        // 1. Validate unique phone
+    public BaseApiResponse<RegisterResponse> register(RegisterRequest request) {
         if (userRepository.existsByPhone(request.getPhone())) {
             throw new UserAlreadyExistsException("Phone number already in use");
         }
 
-        // 2. Find account type
         AccountType accountType = accountTypeRepository
                 .findById(request.getAccountTypeId())
                 .orElseThrow(() -> new RuntimeException("Invalid account type"));
 
-        // 3. Build user entity
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .middleName(request.getMiddleName())
@@ -68,27 +66,13 @@ public class AuthServiceImpl implements AuthService {
                 .accountType(accountType)
                 .build();
 
-        // 4. Assign default role
         Set<Role> roles = new HashSet<>();
         roles.add(Role.ROLE_USER);
         user.setRoles(roles);
 
-        // 5. Save user
         userRepository.save(user);
 
-//        // 6. Generate JWT tokens
-//        String accessToken = jwtService.generateToken(user.getPhone());
-//        String refreshToken = jwtService.generateRefreshToken(user.getPhone());
-//
-//        // 7. Save refresh token
-//        RefreshToken refresh = RefreshToken.builder()
-//                .token(refreshToken)
-//                .user(user)
-//                .expiryDate(Instant.now().plusSeconds(jwtService.getRefreshTokenDuration()))
-//                .build();
-//        refreshTokenRepository.save(refresh);
-
-        // 8. Publish Kafka event
+        // Publish Kafka event
         UserRegisteredEvent event = UserRegisteredEvent.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
@@ -99,10 +83,8 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         userEventProducer.publishUserRegistered(event);
 
-        // 9. Prepare response
-        AuthResponse response = AuthResponse.builder()
-//                .accessToken(accessToken)
-//                .refreshToken(refreshToken)
+        RegisterResponse response = RegisterResponse.builder()
+                .userId(user.getId())
                 .firstName(user.getFirstName())
                 .middleName(user.getMiddleName())
                 .lastName(user.getLastName())
@@ -121,15 +103,15 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Invalid credentials");
         }
 
-        String accessToken = jwtService.generateToken(user.getPhone());
-        String refreshToken = jwtService.generateRefreshToken(user.getPhone());
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         RefreshToken refresh = RefreshToken.builder()
                 .token(refreshToken)
                 .user(user)
-                .expiryDate(Instant.now().plusSeconds(jwtService.getRefreshTokenDuration()))
+                .expiryDate(Instant.now().plusMillis(jwtService.getAllClaims(refreshToken).getExpiration().getTime()))
                 .build();
-        refreshTokenRepository.save(refresh);
+//        refreshTokenRepository.save(refresh);
 
         JwtResponse jwtResponse = JwtResponse.builder()
                 .accessToken(accessToken)
@@ -155,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidTokenException("Refresh token expired");
         }
 
-        String newAccessToken = jwtService.generateToken(token.getUser().getPhone());
+        String newAccessToken = jwtService.generateToken(token.getUser());
 
         JwtResponse jwtResponse = JwtResponse.builder()
                 .accessToken(newAccessToken)
@@ -180,40 +162,27 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public BaseApiResponse<Void> forgotPassword(ForgotPasswordRequest request) {
-        // 1. Find user by phone, throw exception if not found
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // 2. Generate 6-digit OTP using your OTP generator utility
         String otp = otpGenerator.generate6DigitOtp();
+        // persist OTP in Redis or DB
 
-        // 3. Persist OTP in Redis or DB for later verification
-        // TODO: Implement OTP persistence
-
-        // 4. Send OTP to user's email
         emailService.sendOtp(user.getEmail(), otp);
-
-        // 5. Return success response
         return BaseApiResponse.success("OTP sent to email");
     }
 
     @Override
     public BaseApiResponse<Void> resetPassword(ResetPasswordRequest request) {
-        // 1. Find user by email
-        // TODO: Verify OTP from Redis/DB and get corresponding user
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // 2. Validate new password
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
             throw new IllegalArgumentException("New password cannot be empty");
         }
 
-        // 3. Encode and set new password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-
-        // 4. Return success response
         return BaseApiResponse.success("Password reset successful");
     }
 }
